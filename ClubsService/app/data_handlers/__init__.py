@@ -1,0 +1,2 @@
+from app.data_handlers.info_handler import InfoHandler
+from app.data_handlers.club_handler import ClubHandler

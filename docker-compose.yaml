@@ -1,0 +1,127 @@
+version: "3.9"
+services:
+
+  db_user:
+    container_name: db_user
+    image: postgres
+    restart: always
+    env_file:
+      - .env-db_user
+    volumes:
+      - ./data/u:/var/lib/postgresql/data/
+    networks:
+      - microservice_network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d usersDB" ]
+      interval: 10s
+      timeout: 5s
+      retries: 100
+      start_period: 10s
+
+  db_club:
+    container_name: db_club
+    image: postgres
+    restart: always
+    env_file:
+      - .env-db_club
+    volumes:
+      - ./data/c:/var/lib/postgresql/data/
+    networks:
+      - microservice_network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d clubsDB" ]
+      interval: 10s
+      timeout: 5s
+      retries: 100
+      start_period: 10s
+
+  db_business:
+    container_name: db_business
+    image: postgres
+    restart: always
+    env_file:
+      - .env-db_business
+    volumes:
+      - ./data/b:/var/lib/postgresql/data/
+    networks:
+      - microservice_network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d businessesDB" ]
+      interval: 10s
+      timeout: 5s
+      retries: 100
+      start_period: 10s
+
+
+  broker:
+    image: rabbitmq:3-management-alpine
+    container_name: 'rabbitmq'
+    ports:
+      - 5672:5672
+      - 15672:15672
+    volumes:
+      - ./data/mq:/var/lib/rabbitmq
+      - ./data/log:/var/log/rabbitmq
+    networks:
+      - microservice_network
+
+
+  service_user:
+    container_name: service_user
+    restart: always
+    build:
+      context: /UsersService
+      dockerfile: Dockerfile
+    ports:
+      - 8000:8000
+    depends_on:
+      db_user:
+        condition: service_healthy
+    env_file:
+      - .env-users
+    volumes:
+      - ./data/sp:/src/images/
+    networks:
+      - microservice_network
+
+  service_club:
+    container_name: service_club
+    restart: always
+    build:
+      context: /ClubsService
+      dockerfile: Dockerfile
+    ports:
+      - 8001:8001
+    depends_on:
+      db_club:
+        condition: service_healthy
+    env_file:
+      - .env-clubs
+    volumes:
+      - ./data/spc:/src/logos/
+    networks:
+      - microservice_network
+
+  service_business:
+    container_name: service_business
+    restart: always
+    build:
+      context: /BusinessesService
+      dockerfile: Dockerfile
+    ports:
+      - 8002:8002
+    depends_on:
+      db_business:
+        condition: service_healthy
+    env_file:
+      - .env-businesses
+    volumes:
+      - ./data/spbl:/src/logo/
+      - ./data/spbi:/src/image/
+      - ./data/spbp:/src/products-image/
+    networks:
+      - microservice_network
+
+networks:
+  microservice_network:
+    name: microservice_network
